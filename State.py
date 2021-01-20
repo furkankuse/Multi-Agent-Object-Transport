@@ -29,7 +29,6 @@ class State:
     def getForComp(self):
         return [self._agent1X, self._agent1Y, self._agent1Con, self._agent2X, self._agent2Y, self._agent2Con]
 
-    @property
     def getQValue(self, action):
         return self._QValues[action]
 

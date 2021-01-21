@@ -14,6 +14,9 @@ class Environment:
     def getEnv(self):
         return self._env
 
+    def setIndexOfTheObject(self, indexes):
+        self._IndexOfTheObject = indexes
+
     def setEnv(self, env):
         self._env = env
 
@@ -78,7 +81,7 @@ class Environment:
     def moveTheObject(self, action):
         # This function moves the object to the given direction,
         # and returns the reward for it
-        nextIndexes = self.generateNextState(self._IndexOfTheObject, action)
+        nextIndexes = self.generateNextState([self._IndexOfTheObject[0],self._IndexOfTheObject[1],"free"], action)
         self._env[self._IndexOfTheObject[0]][self._IndexOfTheObject[1]] = 0
         self._IndexOfTheObject = [nextIndexes[0], nextIndexes[1]]
         if self._env[nextIndexes[0]][nextIndexes[1]] == 1:
@@ -120,7 +123,7 @@ class Environment:
 
         if nextIndexes[1] + 1 < len(self._env) and self._env[nextIndexes[0]][nextIndexes[1] + 1] == 3:
             return "holdingLeft"
-        if nextIndexes[1] - 1 <= 0 and self._env[nextIndexes[0]][nextIndexes[1] - 1] == 3:
+        if nextIndexes[1] - 1 >= 0 and self._env[nextIndexes[0]][nextIndexes[1] - 1] == 3:
             return "holdingRight"
 
         return "free"

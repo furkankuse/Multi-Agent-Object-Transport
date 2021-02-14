@@ -28,7 +28,6 @@ class Environment:
         nextStateAgent1 = self.generateNextState(currentStateAgent1, agent1action)
         currentStateAgent2 = state.getAgent2
         nextStateAgent2 = self.generateNextState(currentStateAgent2, agent2action)
-        agent1IsItOkay, agent2IsItOkay = self.canItBeThere(nextStateAgent1, nextStateAgent2)
         # initial value of reward is 0
         # if one of the agents or both of them grab the object it becomes 1
         # if object carried to the target area it becomes 10
@@ -41,13 +40,15 @@ class Environment:
                 currentStateAgent2[2] == 'holdingLeft' and currentStateAgent1[2] == 'holdingRight'):
             # Check if both of them try to go same direction
             if agent1action == agent2action:
-                #   Check if one of them go in to wall
-                if not (agent1IsItOkay and agent2IsItOkay):
+                # We need to check if this one is a valid move or not
+                nextStateObject = self.generateNextState([self._IndexOfTheObject[0], self._IndexOfTheObject[1], "free"], agent1action)
+                if not self.isItAValidMoveWObject(nextStateAgent1, nextStateAgent2, nextStateObject):
                     nextStateAgent1 = currentStateAgent1
                     nextStateAgent2 = currentStateAgent2
-                #   if they move
+                # if they move we update rewards
                 else:
-                    reward1 = self.moveTheObject(agent2action)
+                    # In this part we need to move the object and return max reward for both agents
+                    reward1 = self.moveTheObject(nextStateObject)
                     reward2 = reward1
 
             # Check if they try to go different direction
@@ -55,20 +56,10 @@ class Environment:
                 nextStateAgent1 = currentStateAgent1
                 nextStateAgent2 = currentStateAgent2
 
-        # **************************************************************************************** #
-        # This part might be unnecessary
-        # Holding object from one side
-        # elif currentStateAgent1[2] == 'holdingLeft' or currentStateAgent1[2] == 'holdingRight' or currentStateAgent2[
-        #    2] == 'holdingLeft' or currentStateAgent2[2] == 'holdingRight':
-        # Check if the moving one goes into wall
-        #    if not (agent1IsItOkay and agent2IsItOkay):
-        #        return self.nextStateFormatter(currentStateAgent1, currentStateAgent2, 0)
-        # Check if the moving one grabs the object
-
-        # **************************************************************************************** #
-
         # Case which they move separately
         else:
+            agent1IsItOkay, agent2IsItOkay = self.isItAValidMove(nextStateAgent1, nextStateAgent2)
+
             # check if agent fail to move
             if not agent1IsItOkay or currentStateAgent1[2] == "holdingLeft" or currentStateAgent1[2] == "holdingRight":
                 nextStateAgent1 = currentStateAgent1
@@ -80,46 +71,46 @@ class Environment:
             if nextStateAgent2[2] != currentStateAgent2[2]:
                 reward2 = self._minReward
 
-        return self.nextStateFormatter(nextStateAgent1, nextStateAgent2, [reward1,reward2])
+        return self.nextStateFormatter(nextStateAgent1, nextStateAgent2, [reward1, reward2])
 
-    def moveTheObject(self, action):
-        # This function moves the object to the given direction,
-        # and returns the reward for it
-        nextIndexes = self.generateNextState([self._IndexOfTheObject[0], self._IndexOfTheObject[1],"free"], action)
-        self._env[self._IndexOfTheObject[0]][self._IndexOfTheObject[1]] = 0
-        self._IndexOfTheObject = [nextIndexes[0], nextIndexes[1]]
-        if self._env[nextIndexes[0]][nextIndexes[1]] == 1:
-            return self._maxReward
-        else:
-            self._env[nextIndexes[0]][nextIndexes[1]] = 3
-            return 0
+    def isItAValidMove(self, nextStateAgent1, nextStateAgent2):
+        # This function used to control if the action taken by agents is a valid move or not
+        # When they are not holding the object proper way
 
-    def canItBeThere(self, indexOfAgent1, indexOfAgent2):
         # This one will check if the agents will be able to move that indexes
         agent1, agent2 = True, True
 
         # For checking if the agents get on the same index
-        if indexOfAgent1[0] == indexOfAgent2[0] and indexOfAgent1[1] == indexOfAgent2[1]:
+        if nextStateAgent1[0] == nextStateAgent2[0] and nextStateAgent1[1] == nextStateAgent2[1]:
             agent1, agent2 = False, False
 
-        if indexOfAgent2[2] == indexOfAgent1[2] and indexOfAgent1[2] != "free":
+        if nextStateAgent2[2] == nextStateAgent1[2] and nextStateAgent1[2] != "free":
             agent1, agent2 = False, False
-
-        # For checking if the agents go out of the index
-        #if 0 > indexOfAgent1[0] or indexOfAgent1[0] >= len(self._env) or 0 > indexOfAgent1[1] or indexOfAgent1[1] >= len(self._env[0]):
-        #    agent1 = False
-
-        #if 0 > indexOfAgent2[0] or indexOfAgent2[0] >= len(self._env) or 0 > indexOfAgent2[1] or indexOfAgent2[1] >= len(self._env[0]):
-        #    agent2 = False
 
         # For checking if the agents go into the object or a wall
-        if self._env[indexOfAgent1[0]][indexOfAgent1[1]] > 1:
+        if self._env[nextStateAgent1[0]][nextStateAgent1[1]] > 1:
             agent1 = False
 
-        if self._env[indexOfAgent2[0]][indexOfAgent2[1]] > 1:
+        if self._env[nextStateAgent2[0]][nextStateAgent2[1]] > 1:
             agent2 = False
 
         return agent1, agent2
+
+    def isItAValidMoveWObject(self, nextStateAgent1, nextStateAgent2, nextStateObject):
+        # This function used to control if the action taken by agents is a valid move or not
+        # When both of the holding the one side of the object
+        agent1, agent2, objectV = True, True, True
+
+        if self._env[nextStateAgent1[0]][nextStateAgent1[1]] == 2:
+            agent1 = False
+
+        if self._env[nextStateAgent2[0]][nextStateAgent2[1]] == 2:
+            agent2 = False
+
+        if self._env[nextStateObject[0]][nextStateObject[1]] == 2:
+            agent2 = False
+
+        return agent1 and agent2 and objectV
 
     def nextCond(self, nextIndexes, currentCond):
         if currentCond != "free":
@@ -152,3 +143,14 @@ class Environment:
 
         nextState.append(self.nextCond(nextState, currentState[2]))
         return nextState
+
+    def moveTheObject(self, nextState):
+        # This function moves the object to the given direction,
+        # and returns the reward for it
+        self._env[self._IndexOfTheObject[0]][self._IndexOfTheObject[1]] = 0
+        self._IndexOfTheObject = [nextState[0], nextState[1]]
+        if self._env[nextState[0]][nextState[1]] == 1:
+            return self._maxReward
+        else:
+            self._env[nextState[0]][nextState[1]] = 3
+            return 0

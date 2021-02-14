@@ -1,4 +1,4 @@
-from State import State
+from Agents.State import State
 import random
 
 
@@ -13,6 +13,7 @@ class Agent:
         self._currentState = startState
         self._QTable.append(startState)
         self._name = name
+
     @property
     def getCurrentState(self):
         return self._currentState
@@ -26,15 +27,18 @@ class Agent:
     def isItANewState(self, nextStateParameters):
         length = len(self._QTable)
         for i in range(length):
-            a = self._QTable[i].getForComp()
             if nextStateParameters == self._QTable[i].getForComp():
                 return False, self._QTable[i]
         return True, None
 
+    def epsilonDecay(self):
+        if self._epsilon >= .05:
+            self._epsilon *= self._epsilonDecay
+
     def calcQValue(self, reward, action, nextState):
         val = reward + self._discountRate * nextState.getMaxQValue() - self._currentState.getQValue(action)
         val = self._currentState.getQValue(action) + self._learningRate * val
-        nextState.updateQValue(val, action)
+        self._currentState.updateQValue(val, action)
 
     def stateUpdate(self, nextStateParameters, reward, action):
         isItNew, nextState = self.isItANewState(nextStateParameters)
@@ -44,10 +48,9 @@ class Agent:
 
         self.calcQValue(reward, action, nextState)
         self._currentState = nextState
-        #self._epsilon -= self._epsilonDecay
 
     def actionChooser(self):
-        if random.randint(1, 100000) <= self._epsilon * 100000:
+        if random.randint(1, 1000000) <= self._epsilon * 1000000:
             return random.randint(0, 4)
         else:
             return self._currentState.getMaxQIndex()

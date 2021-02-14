@@ -32,7 +32,8 @@ class Environment:
         # initial value of reward is 0
         # if one of the agents or both of them grab the object it becomes 1
         # if object carried to the target area it becomes 10
-        reward = 0
+        reward1 = 0
+        reward2 = 0
 
         # Holding object from both sides
         # Which means, they are moving together
@@ -46,7 +47,8 @@ class Environment:
                     nextStateAgent2 = currentStateAgent2
                 #   if they move
                 else:
-                    reward = self.moveTheObject(agent2action)
+                    reward1 = self.moveTheObject(agent2action)
+                    reward2 = reward1
 
             # Check if they try to go different direction
             else:
@@ -73,15 +75,17 @@ class Environment:
             if not agent2IsItOkay or currentStateAgent2[2] == "holdingLeft" or currentStateAgent2[2] == "holdingRight":
                 nextStateAgent2 = currentStateAgent2
 
-            if nextStateAgent1[2] != currentStateAgent1[2] or nextStateAgent2[2] != currentStateAgent2[2]:
-                reward = self._minReward
+            if nextStateAgent1[2] != currentStateAgent1[2]:
+                reward1 = self._minReward
+            if nextStateAgent2[2] != currentStateAgent2[2]:
+                reward2 = self._minReward
 
-        return self.nextStateFormatter(nextStateAgent1, nextStateAgent2, reward)
+        return self.nextStateFormatter(nextStateAgent1, nextStateAgent2, [reward1,reward2])
 
     def moveTheObject(self, action):
         # This function moves the object to the given direction,
         # and returns the reward for it
-        nextIndexes = self.generateNextState([self._IndexOfTheObject[0],self._IndexOfTheObject[1],"free"], action)
+        nextIndexes = self.generateNextState([self._IndexOfTheObject[0], self._IndexOfTheObject[1],"free"], action)
         self._env[self._IndexOfTheObject[0]][self._IndexOfTheObject[1]] = 0
         self._IndexOfTheObject = [nextIndexes[0], nextIndexes[1]]
         if self._env[nextIndexes[0]][nextIndexes[1]] == 1:
